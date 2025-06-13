@@ -14,6 +14,7 @@ import pandas as pd
 from dwave.cloud.api import Problems
 import json
 from dwave.embedding.chain_breaks import majority_vote
+from dwave.embedding.chain_strength import uniform_torque_compensation
 import dimod
 
 def unembed_sampleset_mine(sampleset, embedding, bqm):
@@ -55,7 +56,7 @@ def find_embedding_and_solve(bqm, n, p, problem_index, embedding_index):
     embedding = find_embedding(source_edgelist, target_edgelist, verbose=3, interactive=True, chainlength_patience=embedding_index)
     
     if embedding:
-        embedded_bqm = embed_bqm(bqm, embedding, target_adjacency, chain_strength=None)
+        embedded_bqm = embed_bqm(bqm, embedding, target_adjacency, chain_strength=lambda bqm: uniform_torque_compensation(bqm = bqm, prefactor=2))
         sampleset = sampler.sample(embedded_bqm, num_reads=1000, label=f'BIKAINTEK_EMBEDDING_ER_{n}_{p}_{problem_index}_{embedding_index}')
         unembedded_sampleset = unembed_sampleset_mine(sampleset, embedding, bqm)
 
