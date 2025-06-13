@@ -3,7 +3,7 @@ from dwave.system import DWaveSampler
 from dwave.embedding import embed_bqm
 import dimod
 import numpy as np
-from instance_generator import er_generator_indexed
+from utils import er_generator_indexed
 import pickle
 from joblib import Parallel as Para
 from joblib import delayed
@@ -55,7 +55,7 @@ def find_embedding_and_solve(bqm, n, p, problem_index, embedding_index):
     embedding = find_embedding(source_edgelist, target_edgelist, verbose=3, interactive=True, chainlength_patience=embedding_index)
     
     if embedding:
-        embedded_bqm = embed_bqm(bqm, embedding, target_adjacency, chain_strength=)
+        embedded_bqm = embed_bqm(bqm, embedding, target_adjacency, chain_strength=None)
         sampleset = sampler.sample(embedded_bqm, num_reads=1000, label=f'BIKAINTEK_EMBEDDING_ER_{n}_{p}_{problem_index}_{embedding_index}')
         unembedded_sampleset = unembed_sampleset_mine(sampleset, embedding, bqm)
 

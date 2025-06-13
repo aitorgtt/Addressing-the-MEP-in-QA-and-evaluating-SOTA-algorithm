@@ -3,7 +3,7 @@ from dwave.system import DWaveSampler
 import dimod
 import time
 import numpy as np
-from instance_generator import er_generator
+from utils import er_generator
 import pickle
 from joblib import Parallel, delayed
 import sys
