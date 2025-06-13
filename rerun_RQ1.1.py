@@ -13,11 +13,12 @@ import time
 import pandas as pd
 from dwave.cloud.api import Problems
 import json
-from dwave.embedding.chain_breaks import majority_vote
+from dwave.embedding.chain_breaks import majority_vote, broken_chains
 from dwave.embedding.chain_strength import uniform_torque_compensation
 import dimod
 
-def unembed_sampleset_mine(sampleset, embedding, bqm):
+
+def unembed_sampleset_mine(sampleset, embedding, bqm, chain_break_fraction=False):
     variables = list(bqm.variables)  # need this ordered
     try:
         chains = [embedding[v] for v in variables]
@@ -31,10 +32,21 @@ def unembed_sampleset_mine(sampleset, embedding, bqm):
     reserved = {'sample', 'energy'}
     vectors = {name: record[name][idxs]
             for name in record.dtype.names if name not in reserved}
+    
+    if chain_break_fraction:
+        broken = broken_chains(sampleset, chains)
+        if broken.size:
+            vectors['chain_break_fraction'] = broken.mean(axis=1)[idxs]
+        else:
+            vectors['chain_break_fraction'] = 0
 
     info = sampleset.info.copy()
 
-    return dimod.SampleSet.from_samples_bqm((unembedded, variables), bqm, info=info, **vectors)
+    return dimod.SampleSet.from_samples_bqm((unembedded, variables),
+                                            bqm,
+                                            info=info,
+                                            **vectors)
+
 
 
 
@@ -46,9 +58,20 @@ def just_solve(bqm, n, p, problem_index, embedding_index, prev_output):
     target_adjacency = sampler.adjacency
     
     if embedding:
+        broken_chain_fractions = np.zeros((2, 1000))
+        unembedded_record = unembed_sampleset_mine(sampleset, embedding, bqm, chain_break_fraction=True).record
+        read = 0
+        for rec_sample in unembedded_record:
+            occ = rec_sample[2]
+            while occ > 0:
+                broken_chain_fractions[0, read] = rec_sample[-1]
+                occ -= 1
+                read += 1
+
+
         embedded_bqm = embed_bqm(bqm, embedding, target_adjacency, chain_strength=lambda bqm: uniform_torque_compensation(bqm = bqm, prefactor=2))
         new_sampleset = sampler.sample(embedded_bqm, num_reads=1000, label=f'BIKAINTEK_EMBEDDING_ER_{n}_{p}_{problem_index}_{embedding_index}_2')
-        unembedded_sampleset = unembed_sampleset_mine(sampleset, embedding, bqm)
+        unembedded_sampleset = unembed_sampleset_mine(new_sampleset, embedding, bqm, chain_break_fraction=True)
 
         length = 0
         for chain in embedding.values():
@@ -76,12 +99,13 @@ def just_solve(bqm, n, p, problem_index, embedding_index, prev_output):
             occ = rec_sample[2]
             while occ > 0:
                 new_unembedded_energies[1, read] = rec_sample[1]
+                broken_chain_fractions[1, read] = rec_sample[-1]
                 occ -= 1
                 read += 1
         
-        return embedding, (sampleset, new_sampleset), acl, num_qubits, new_energies, new_unembedded_energies, reference_energy
+        return embedding, (sampleset, new_sampleset), acl, num_qubits, new_energies, new_unembedded_energies, broken_chain_fractions, reference_energy
     else:
-        return None, None, None, None, None, None, reference_energy
+        return None, None, None, None, None, None, None, reference_energy
 
 densities = [round(0.05 + 0.05*i, 2) for i in range(20)]  # 20
 sizes = [25+10*i for i in range(16)] # 16
@@ -101,6 +125,7 @@ new_unembedded_energies = np.zeros((20, 16, 5, 10, 2, 1000))
 # reference_energies = np.zeros((20, 16, 5))
 new_relative_errors = np.zeros((20, 16, 5, 10, 2, 1000))
 new_unembedded_relative_errors = np.zeros((20, 16, 5, 10, 2, 1000))
+broken_chain_fractions = np.zeros((20, 16, 5, 10, 2, 1000))
 new_container = []
 
 for density in range(len(densities)):
@@ -118,23 +143,28 @@ for density in range(len(densities)):
 
             new_container.append((bqm, embedding_sample_list))
 
+            reference_energy = reference_energies[density, size, problem]
+
             for n_embedding in range(n_embeddings):
-                embedding, _, acl_current, num_qubits_current, energies_current, unembedded_energies_current, _ = embedding_sample_list[n_embedding]
-                reference_energy = reference_energies[density, size, problem]
+                embedding, _, acl_current, num_qubits_current, energies_current, unembedded_energies_current, broken_chain_fractions_current, _ = embedding_sample_list[n_embedding]
+                
                 if embedding:
                     new_energies[density, size, problem, n_embedding, :] = energies_current
                     new_unembedded_energies[density, size, problem, n_embedding, :] = unembedded_energies_current
                     new_relative_errors[density, size, problem, n_embedding, :] = abs((reference_energy - energies_current)/reference_energy)
                     new_unembedded_relative_errors[density, size, problem, n_embedding, :] = abs((reference_energy - unembedded_energies_current)/reference_energy)
+                    broken_chain_fractions[density, size, problem, n_embedding, :] = broken_chain_fractions_current
 
                 else:
                     new_energies[density, size, problem, n_embedding, :] = np.nan
                     new_unembedded_energies[density, size, problem, n_embedding, :] = np.nan
                     new_relative_errors[density, size, problem, n_embedding, :] = np.nan
                     new_unembedded_relative_errors[density, size, problem, n_embedding, :] = np.nan
+                    broken_chain_fractions[density, size, problem, n_embedding, :] = np.nan
+
 
         with open('RQ1.1_extended.pkl', 'wb') as f:
-            pickle.dump([acl_array, num_qubits_array, energies, unembedded_energies, reference_energies, relative_errors, unembedded_relative_errors], f)
+            pickle.dump([acl_array, num_qubits_array, energies, unembedded_energies, reference_energies, relative_errors, unembedded_relative_errors, broken_chain_fractions], f)
             pickle.dump(container, f)
 
     #LO DE ENEKO PARA GUARDAR LAS RUNS
