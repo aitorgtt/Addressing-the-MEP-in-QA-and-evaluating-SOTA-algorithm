@@ -5,3 +5,10 @@ __pycache__/
 .DS_Store
 pickles/
 outputs/
+tests.ipynb
+CE_times.py
+reports/
+rerun_RQ1.1.py
+rerun_RQ1.2.py
+change_format.py
+continue_rerun_RQ1.1.py

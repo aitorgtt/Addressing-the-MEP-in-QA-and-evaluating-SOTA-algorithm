@@ -4,12 +4,6 @@ import networkx as nx
 
 
 def instance_generator(n, p, save=True):
-    """ 
-        ER graph = Erdös Rényi graph
-        n: size
-        p: density
-    """
-
     G = nx.erdos_renyi_graph(n, p)
 
     if save:
@@ -61,6 +55,34 @@ def instance_reader(filename: str):
                 weigth_count += 1
         assert m == weigth_count
 
-    bqm = dimod.BinaryQuadraticModel(linear, quadratic, 0.0, 'BINARY')
+    return dimod.BinaryQuadraticModel(linear, quadratic, 0.0, 'BINARY')
 
-    return bqm
+
+def graph_generator(n, p, save=True):           # Just the graph for RQ2
+    G = nx.erdos_renyi_graph(n, p)
+
+    if save:
+        path = (f'instances/ER_{n}_{p}.txt')
+        f = open(path, "w")
+        edge_number = len(G.edges)
+        f.write(f"{n} {edge_number}\n")
+
+        for v in G.edges:
+            f.write(f"{v[0]} {v[1]}\n")
+
+        f.close()
+
+    return G
+
+def graph_reader(filename: str):
+    G = nx.Graph()  
+
+    with open(filename, 'r') as f:
+        first_line = f.readline().strip()
+        num_nodes, num_edges = map(int, first_line.split())
+
+        for line in f:
+            node1, node2 = line.strip().split()
+            G.add_edge(node1, node2)
+
+    return G

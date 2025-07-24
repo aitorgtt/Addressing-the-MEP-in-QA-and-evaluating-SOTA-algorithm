@@ -150,15 +150,13 @@ for density in range(len(densities)):
             pickle.dump([acl, num_qubits, energies, unembedded_energies, reference_energies, relative_errors, unembedded_relative_errors], f)
             pickle.dump(container, f)
 
-    #LO DE ENEKO PARA GUARDAR LAS RUNS
+    #To save D-Wave execution history:
     api = Problems.from_config()
     ps = api.list_problems(max_results=800)
     problems = pd.DataFrame()
     for count, p in enumerate(ps):
         p_json = json.loads(p.json())
-    # store results in pandas dataframe
         for i in p_json.keys():
             problems.loc[count, i] = p_json.get(i)
-    
     namefile = time.time()
-    problems.to_csv("reports_TCP6/" + str(namefile) + ".csv", index = False)
+    problems.to_csv("reports/" + str(namefile) + ".csv", index = False)

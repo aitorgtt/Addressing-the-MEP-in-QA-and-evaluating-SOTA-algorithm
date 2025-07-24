@@ -99,7 +99,7 @@ acl = np.zeros((5, 100))
 num_qubits = np.zeros((5, 100))
 energies = np.zeros((5, 100, 1000))
 unembedded_energies = np.zeros((5, 100, 1000))
-reference_energies = np.zeros((5, 100))
+reference_energies = np.zeros((5))
 relative_errors = np.zeros((5, 100, 1000))
 unembedded_relative_errors = np.zeros((5, 100, 1000))
 

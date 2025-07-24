@@ -9,11 +9,9 @@ DOI: arxiv:2504.13376
 
 ---
 
-## 📌 Project Goal
 
 The objective of this project is to faithfully replicate the experiments, results, and visualizations presented in the original publication. This effort is part of the scientific reproducibility movement and aims to verify, validate, and potentially extend the findings of the original study.
 
 ---
 
-## 📁 Repository Structure
-
+The data from the experiments is saved in pickles.
