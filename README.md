@@ -14,4 +14,4 @@ The objective of this project is to faithfully replicate the experiments, result
 
 ---
 
-The data from the experiments is saved in pickles.
+The data from the experiments is saved in pickles too big to be pushed. FOr the moment these are not openly available, but, if interested, send an email.
