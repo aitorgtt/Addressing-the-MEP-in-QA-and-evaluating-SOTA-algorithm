@@ -12,10 +12,10 @@ from minorminer import find_embedding
 #  from minorminer.layout import find_embedding
 
 token = 'some token'
-dw = DWaveSampler(token=token)      # This is not necesary, but if you have a token is an easy way of getting the exact broken Pegasus graph.
-target_nodelist, target_edgelist, target_adjacency = dimod.child_structure_dfs(dw)
-target_graph = nx.Graph()
-target_graph.add_edges_from(target_edgelist)
+sampler = DWaveSampler(solver='Advantage_system4.1', token=token)      # This is not necesary, but if you have a token is an easy way of getting the exact broken Pegasus graph.
+target_edgelist = sampler.edgelist
+ideal = dnx.pegasus_graph(16)
+target_graph = ideal.edge_subgraph([tuple(edge) for edge in target_edgelist])
 
 def find_embedding_plus(source, n, p, idx):
     sys.stdout = open(f'./outputs/output_er_{n}_{p}_{idx}.txt', 'wt')
