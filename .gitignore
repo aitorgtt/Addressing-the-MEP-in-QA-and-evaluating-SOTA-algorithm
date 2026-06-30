@@ -4,6 +4,8 @@ __pycache__/
 .env
 .DS_Store
 pickles/
+# pickles/RQ1.1_extended_container.joblib
+# pickles/RQ1.2_extended_container.pkl
 outputs/
 tests.ipynb
 CE_times.py
